@@ -10,6 +10,7 @@ edition = "2018"
 abnf = "0.11.3"
 petgraph = "0.5.1"
 anyhow = "1.0.40"
+nom = "6.1.2"
 
 [dev-dependencies]
 rstest = "0.9.0"
