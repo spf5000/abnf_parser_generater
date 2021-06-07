@@ -9,17 +9,30 @@ mod rule_name;
 mod string;
 mod terminal_value;
 
-pub(crate) use terminal_value::terminal_value_match_parser;
+// pub(crate) use terminal_value::terminal_value_match_parser;
+// use nom_output_mapper::nom_output_mapper;
 pub(crate) use string::string_parser;
-use nom_output_mapper::nom_output_mapper;
+use abnf::types::Rule;
 use std::boxed::Box;
 
-pub(crate) type AbnfParser<'a> = nom::Parser<&'a str, ParserOutput<'a>, (&'a str, nom::error::ErrorKind)>;
-// pub(crate) type SmithyParser<'a> = impl nom::Parser<&'a str, ParserOutput<'a>, anyhow::Error>;
-// pub(crate) type SmithyParseResult<'a> = crate::ParseResult<'a, ParserOutput<'a>>;
-// pub(crate) type SmithyParser<'a> = crate::Parser<'a, ParserOutput<'a>>;
-// pub(crate) type SmithyParseResult<'a, O> = Result<(&'a str, O), anyhow::Error>;
-// pub(crate) type SmithyParser<'a, O> = Box<dyn Fn(&str) -> SmithyParseResult<'a, O>>;
+pub struct AbnfParser<'a> {
+    parser: Box<dyn nom::Parser<&'a str, ParserOutput<'a>, nom::error::Error<&'a str>> + 'a>
+}
+
+impl <'a> AbnfParser<'a> {
+    pub(crate) fn from_rule_and_str_parser<T>(rule: &'a Rule, parser: T) -> Self
+    where T: nom::Parser<&'a str, &'a str, nom::error::Error<&'a str>> + 'a {
+        Self {
+            parser: Box::new(parser.map(move |output| ParserOutput {rule_name: rule.name(), value: ParserOutputValue::Value(output)}))
+        }
+    }
+}
+
+impl <'a> nom::Parser<&'a str, ParserOutput<'a>, nom::error::Error<&'a str>> for AbnfParser<'a> {
+    fn parse(&mut self, input: &'a str) -> nom::IResult<&'a str, ParserOutput<'a>, nom::error::Error<&'a str>> {
+        self.parser.parse(input)
+    }
+}
 
 pub(crate) struct ParserOutput<'a> {
     rule_name: &'a str,
