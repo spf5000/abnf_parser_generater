@@ -13,4 +13,4 @@ anyhow = "1.0.40"
 nom = "6.1.2"
 
 [dev-dependencies]
-rstest = "0.9.0"
+rstest = "0.10.0"

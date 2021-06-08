@@ -1,13 +1,13 @@
-mod alternatives;
-mod concatination;
-mod group;
-mod node_parsers;
+// mod alternatives;
+// mod concatination;
+// mod group;
+// mod node_parsers;
 mod nom_output_mapper;
-mod optional;
-mod repitiion;
-mod rule_name;
+// mod optional;
+// mod repitiion;
+// mod rule_name;
 mod string;
-mod terminal_value;
+// mod terminal_value;
 
 // pub(crate) use terminal_value::terminal_value_match_parser;
 // use nom_output_mapper::nom_output_mapper;
@@ -15,7 +15,8 @@ pub(crate) use string::string_parser;
 use abnf::types::Rule;
 use std::boxed::Box;
 
-pub struct AbnfParser<'a> {
+// #[derive(Debug)]
+pub(crate) struct AbnfParser<'a> {
     parser: Box<dyn nom::Parser<&'a str, ParserOutput<'a>, nom::error::Error<&'a str>> + 'a>
 }
 
@@ -34,11 +35,13 @@ impl <'a> nom::Parser<&'a str, ParserOutput<'a>, nom::error::Error<&'a str>> for
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct ParserOutput<'a> {
     rule_name: &'a str,
     value: ParserOutputValue<'a>
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) enum ParserOutputValue<'a> {
     Value(&'a str),
     Reference(Box<ParserOutput<'a>>)

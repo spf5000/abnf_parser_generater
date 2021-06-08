@@ -1,4 +1,4 @@
-use super::{AbnfParser, nom_output_mapper};
+use super::{AbnfParser};
 use abnf::types::{Rule, Node};
 
 /// Exact string matcher. Used for String and Prose Node types.
@@ -20,41 +20,49 @@ fn string_parser_helper<'a>(rule: &'a Rule, value: &'a String) -> AbnfParser<'a>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::{ParserOutput, ParserOutputValue};
+    use nom::Parser;
+    use rstest::rstest;
 
     const match_str: &str = "Hello World!";
-    const string_rule: Rule = Rule::new("string test", Node::String(String::from(match_str)));
-    const prose_rule: Rule = Rule::new("prose test", Node::Prose(String::from(match_str)));
-    const other_rule: Rule = Rule::new("invalid test", Node::Rulename(String::from(match_str)));
+    const string_rule: Rule = Rule::new("string test", Node::string(match_str));
+    const prose_rule: Rule = Rule::new("prose test", Node::prose(match_str));
+    const other_rule: Rule = Rule::new("invalid test", Node::rulename(match_str));
 
-    #[rstest(rule, expected,
-    case(string_rule, Ok((""), ()))
-    case(prose_rule, Ok((""), ()))
-    case(other_rule, Err("TODO"))
-    )]
-    fn match_literal_matches_test(rule: Rule, expected: ) {
-        let match_hello_world = string_parser("Hello World!".into());
+    #[rstest]
+    #[case(&string_rule)]
+    #[case(&prose_rule)]
+    fn string_parser_full_match_test(#[case] rule: &Rule) {
+        let mut parser = string_parser(rule).expect("String parser should return an AbnfParser!");
+        let parser_output = parser.parse("Hello World!").expect("Parser should have successfully parsed the input!");
         assert_eq!(
-            Ok(("", ())), match_hello_world("Hello World!")
+            ("", ParserOutput { rule_name: rule.name(), value: ParserOutputValue::Value(match_str)}), parser_output
         );
     }
 
-    #[rstest(rule, expected,
-    case(string_rule, Ok((" It's a Beautiful Day!"), ()))
-    case(prose_rule, Ok((" It's a Beautiful Day!"), ()))
-    case(other_rule, Err("TODO"))
-    )]
-    fn match_literal_matches_with_extra_test() {
-        let match_hello_world = string_parser("Hello World!".into());
+    #[rstest]
+    #[case(&string_rule)]
+    #[case(&prose_rule)]
+    fn string_parser_partial_match_test(#[case] rule: &Rule) {
+        let mut parser = string_parser(rule).expect("String parser should return an AbnfParser!");
+        let parser_output = parser.parse("Hello World! It's a Beautiful Day!").expect("Parser should have successfully parsed the input!");
         assert_eq!(
-            Ok((" It's a Beautiful Day!", ())), match_hello_world("Hello World! It's a Beautiful Day!")
+            (" It's a Beautiful Day!", ParserOutput { rule_name: rule.name(), value: ParserOutputValue::Value(match_str)}), parser_output
         );
+    }
+
+    #[rstest]
+    #[case(&string_rule)]
+    #[case(&prose_rule)]
+    fn string_parser_no_match_test(#[case]rule: &Rule) {
+        let input = "It's a Beautiful Day!";
+        let mut parser = string_parser(rule).expect("String parser should return an AbnfParser!");
+        let expected = nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Tag));
+        assert_eq!(expected, parser.parse(input).err().unwrap());
     }
 
     #[test]
-    fn match_literal_does_not_match() {
-        let match_hello_world = string_parser("Hello World!".into());
-        assert_eq!(
-            Err("It's a Beautiful Day!"), match_hello_world("It's a Beautiful Day!")
-        );
+    fn string_parser_invalid_rule_test() {
+        string_parser(&other_rule).err().expect("String parser should return an error for invalid rule type!");
     }
 }
