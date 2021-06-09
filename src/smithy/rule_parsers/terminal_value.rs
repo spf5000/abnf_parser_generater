@@ -1,43 +1,42 @@
-// use super::{SmithyParser, ParserOutput, nom_output_mapper};
-// use abnf::types::{TerminalValues, Rule, Node};
-// use nom::character::complete::char;
-//
-// /// Terminal Value matcher. Used for Terminal Value ranges (ex: U+0041 ('A') to U+005A ('Z')) or
-// /// Terminal Value vectors.
-// ///
-// /// Creates a parser that takes a &str as input and returns a ParserOutput if the &str matches
-// /// the a character within the terminal value provided, otherwise the parser returns an error.
-// pub(crate) fn terminal_value_match_parser<'a>(rule: &'a Rule) -> anyhow::Result<SmithyParser<'a>> {
-//     if let Node::TerminalValues(terminal_value) = rule.node() {
-//         Ok(|input| {
-//             terminal_value_match_parser_helper(rule, terminal_value)(input)
-//         })
-//     } else {
-//         anyhow::Error::msg(format!("rule {} not supported by terminal value parser!", rule))
-//     }
-// }
-//
-// fn terminal_value_match_parser_helper<'a>(rule: &'a Rule, terminal_values: &'a TerminalValues) -> anyhow::Result<SmithyParser<'a>> {
-//     let characters: &Vec<u32>= match terminal_values {
-//         TerminalValues::Concatenation(characters) => characters,
-//         TerminalValues::Range(start, end) => (start..=end).collect()
-//     };
-//     let mut nom_input = String::from("");
-//     for character in characters {
-//         let c = char::from_u32(*character).ok_or(anyhow::Error::msg(format!("Terminal Value {:?} included non-valid u32 values", rule)))?;
-//         nom_input.push(c);
-//     }
-//
-//     Ok(|input| {
-//         nom::character::complete::one_of(nom_input.as_ref())
-//     })
-// }
-//
+use super::AbnfParser;
+use abnf::types::{TerminalValues, Rule, Node};
+use std::iter::FromIterator;
+use nom::character::complete::one_of;
+
+/// Terminal Value matcher. Used for Terminal Value ranges (ex: U+0041 ('A') to U+005A ('Z')) or
+/// Terminal Value vectors.
+///
+/// Creates a parser that takes a &str as input and returns a ParserOutput if the &str matches
+/// the a character within the terminal value provided, otherwise the parser returns an error.
+pub(crate) fn terminal_value_parser<'a>(rule: &'a Rule) -> anyhow::Result<AbnfParser<'a>> {
+    if let Node::TerminalValues(terminal_value) = rule.node() {
+        terminal_value_match_parser_helper(rule, terminal_value)
+    } else {
+        Err(anyhow::Error::msg(format!("rule {} not supported by terminal value parser!", rule)))
+    }
+}
+
+fn terminal_value_match_parser_helper<'a>(rule: &'a Rule, terminal_values: &'a TerminalValues) -> anyhow::Result<AbnfParser<'a>> {
+    // let characters: String = match terminal_values {
+    //     TerminalValues::Concatenation(characters) => characters.iter().map(|char_value| char::from_u32(*char_value)).map(Option::unwrap).collect(),
+    //     TerminalValues::Range(start, end) => (*start..=*end).map(char::from_u32).map(Option::unwrap).collect(), // TODO: find better way to unwrap Option<char>;
+    // };
+
+    // let nom_parser = nom::combinator::map(one_of(move characters.as_str()), move |char_value| char_value.to_string().as_str());
+    let characters: Vec<u32> = match terminal_values {
+        TerminalValues::Concatenation(characters) => characters.clone(),
+        TerminalValues::Range(start, end) => (*start..=*end).collect()
+    };
+
+    let nom_parser = nom::combinator::map(one_of(characters), |char_value| char_value.to_string().as_str());
+    Ok(AbnfParser::<'a>::from_rule_and_str_parser(rule, nom_parser))
+}
+
 // #[cfg(test)]
 // mod tests {
 //     use super::*;
 //     use crate::smithy::rule_parsers::SmithyParseResult;
-//
+// 
 //     #[rstest(input, start, end, expected,
 //     case("Hello World!" 'A', 'Z', Ok(("ello World!", 'H'))),
 //     case("Hello World!" '1', '9', Err("TODO")),
@@ -51,7 +50,7 @@
 //         let parser = terminal_value_match_parser(&terminal_value);
 //         assert_eq!(expected, parser(input));
 //     }
-//
+// 
 //     #[rstest(input, chars, expected,
 //     case("abc" vec!['a', 'e', 'i', 'o', 'u'], Ok(("bc", 'a'))),
 //     case("efg" vec!['a', 'e', 'i', 'o', 'u'], Ok(("fg", 'e'))),
@@ -66,4 +65,4 @@
 //         assert_eq!(expected, parser(input));
 //     }
 // }
-//
+

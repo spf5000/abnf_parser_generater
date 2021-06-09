@@ -7,11 +7,12 @@ mod nom_output_mapper;
 // mod repitiion;
 // mod rule_name;
 mod string;
-// mod terminal_value;
+mod terminal_value;
 
 // pub(crate) use terminal_value::terminal_value_match_parser;
 // use nom_output_mapper::nom_output_mapper;
 pub(crate) use string::string_parser;
+pub(crate) use terminal_value::terminal_value_parser;
 use abnf::types::Rule;
 use std::boxed::Box;
 

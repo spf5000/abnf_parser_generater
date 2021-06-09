@@ -1,4 +1,4 @@
-use super::{AbnfParser};
+use super::AbnfParser;
 use abnf::types::{Rule, Node};
 
 /// Exact string matcher. Used for String and Prose Node types.
@@ -24,45 +24,43 @@ mod tests {
     use nom::Parser;
     use rstest::rstest;
 
-    const match_str: &str = "Hello World!";
-    const string_rule: Rule = Rule::new("string test", Node::string(match_str));
-    const prose_rule: Rule = Rule::new("prose test", Node::prose(match_str));
-    const other_rule: Rule = Rule::new("invalid test", Node::rulename(match_str));
+    const MATCH_STR: &str = "Hello World!";
 
     #[rstest]
-    #[case(&string_rule)]
-    #[case(&prose_rule)]
-    fn string_parser_full_match_test(#[case] rule: &Rule) {
-        let mut parser = string_parser(rule).expect("String parser should return an AbnfParser!");
+    #[case(Rule::new("string test", Node::string(MATCH_STR)))]
+    #[case(Rule::new("prose test", Node::prose(MATCH_STR)))]
+    fn string_parser_full_match_test(#[case] rule: Rule) {
+        let mut parser = string_parser(&rule).expect("String parser should return an AbnfParser!");
         let parser_output = parser.parse("Hello World!").expect("Parser should have successfully parsed the input!");
         assert_eq!(
-            ("", ParserOutput { rule_name: rule.name(), value: ParserOutputValue::Value(match_str)}), parser_output
+            ("", ParserOutput { rule_name: rule.name(), value: ParserOutputValue::Value(MATCH_STR)}), parser_output
         );
     }
 
     #[rstest]
-    #[case(&string_rule)]
-    #[case(&prose_rule)]
-    fn string_parser_partial_match_test(#[case] rule: &Rule) {
-        let mut parser = string_parser(rule).expect("String parser should return an AbnfParser!");
+    #[case(Rule::new("string test", Node::string(MATCH_STR)))]
+    #[case(Rule::new("prose test", Node::prose(MATCH_STR)))]
+    fn string_parser_partial_match_test(#[case] rule: Rule) {
+        let mut parser = string_parser(&rule).expect("String parser should return an AbnfParser!");
         let parser_output = parser.parse("Hello World! It's a Beautiful Day!").expect("Parser should have successfully parsed the input!");
         assert_eq!(
-            (" It's a Beautiful Day!", ParserOutput { rule_name: rule.name(), value: ParserOutputValue::Value(match_str)}), parser_output
+            (" It's a Beautiful Day!", ParserOutput { rule_name: rule.name(), value: ParserOutputValue::Value(MATCH_STR)}), parser_output
         );
     }
 
     #[rstest]
-    #[case(&string_rule)]
-    #[case(&prose_rule)]
-    fn string_parser_no_match_test(#[case]rule: &Rule) {
+    #[case(Rule::new("string test", Node::string(MATCH_STR)))]
+    #[case(Rule::new("prose test", Node::prose(MATCH_STR)))]
+    fn string_parser_no_match_test(#[case]rule: Rule) {
         let input = "It's a Beautiful Day!";
-        let mut parser = string_parser(rule).expect("String parser should return an AbnfParser!");
+        let mut parser = string_parser(&rule).expect("String parser should return an AbnfParser!");
         let expected = nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Tag));
         assert_eq!(expected, parser.parse(input).err().unwrap());
     }
 
     #[test]
     fn string_parser_invalid_rule_test() {
-        string_parser(&other_rule).err().expect("String parser should return an error for invalid rule type!");
+        let test_rule = Rule::new("invalid test", Node::rulename(MATCH_STR));
+        string_parser(&test_rule).err().expect("String parser should return an error for invalid rule type!");
     }
 }
