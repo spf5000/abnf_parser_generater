@@ -11,8 +11,8 @@ mod terminal_value;
 
 // pub(crate) use terminal_value::terminal_value_match_parser;
 // use nom_output_mapper::nom_output_mapper;
+// pub(crate) use terminal_value::terminal_value_parser;
 pub(crate) use string::string_parser;
-pub(crate) use terminal_value::terminal_value_parser;
 use abnf::types::Rule;
 use std::boxed::Box;
 
@@ -25,7 +25,14 @@ impl <'a> AbnfParser<'a> {
     pub(crate) fn from_rule_and_str_parser<T>(rule: &'a Rule, parser: T) -> Self
     where T: nom::Parser<&'a str, &'a str, nom::error::Error<&'a str>> + 'a {
         Self {
-            parser: Box::new(parser.map(move |output| ParserOutput {rule_name: rule.name(), value: ParserOutputValue::Value(output)}))
+            parser: Box::new(parser.map(move |output| ParserOutput {rule_name: rule.name(), value: ParserOutputValue::Value(String::from(output))}))
+        }
+    }
+
+    pub(crate) fn from_rule_and_char_parser<T>(rule: &'a Rule, parser: T) -> Self
+    where T: nom::Parser<&'a str, char, nom::error::Error<&'a str>> + 'a {
+        Self {
+            parser: Box::new(parser.map(move |output| ParserOutput {rule_name: rule.name(), value: ParserOutputValue::Value(output.to_string())}))
         }
     }
 }
@@ -44,7 +51,7 @@ pub(crate) struct ParserOutput<'a> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum ParserOutputValue<'a> {
-    Value(&'a str),
+    Value(String),
     Reference(Box<ParserOutput<'a>>)
 }
 

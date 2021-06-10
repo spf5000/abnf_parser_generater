@@ -7,7 +7,7 @@ use nom::character::complete::one_of;
 /// Terminal Value vectors.
 ///
 /// Creates a parser that takes a &str as input and returns a ParserOutput if the &str matches
-/// the a character within the terminal value provided, otherwise the parser returns an error.
+/// one of the characters within the terminal value provided, otherwise the parser returns an error.
 pub(crate) fn terminal_value_parser<'a>(rule: &'a Rule) -> anyhow::Result<AbnfParser<'a>> {
     if let Node::TerminalValues(terminal_value) = rule.node() {
         terminal_value_match_parser_helper(rule, terminal_value)
@@ -17,19 +17,17 @@ pub(crate) fn terminal_value_parser<'a>(rule: &'a Rule) -> anyhow::Result<AbnfPa
 }
 
 fn terminal_value_match_parser_helper<'a>(rule: &'a Rule, terminal_values: &'a TerminalValues) -> anyhow::Result<AbnfParser<'a>> {
-    // let characters: String = match terminal_values {
-    //     TerminalValues::Concatenation(characters) => characters.iter().map(|char_value| char::from_u32(*char_value)).map(Option::unwrap).collect(),
-    //     TerminalValues::Range(start, end) => (*start..=*end).map(char::from_u32).map(Option::unwrap).collect(), // TODO: find better way to unwrap Option<char>;
-    // };
-
-    // let nom_parser = nom::combinator::map(one_of(move characters.as_str()), move |char_value| char_value.to_string().as_str());
-    let characters: Vec<u32> = match terminal_values {
-        TerminalValues::Concatenation(characters) => characters.clone(),
-        TerminalValues::Range(start, end) => (*start..=*end).collect()
+    let characters: String = match terminal_values {
+        TerminalValues::Concatenation(characters) => characters.iter().map(|char_value| char::from_u32(*char_value)).map(Option::unwrap).collect(),
+        TerminalValues::Range(start, end) => (*start..=*end).map(char::from_u32).map(Option::unwrap).collect(), // TODO: find better way to unwrap Option<char>;
     };
 
-    let nom_parser = nom::combinator::map(one_of(characters), |char_value| char_value.to_string().as_str());
-    Ok(AbnfParser::<'a>::from_rule_and_str_parser(rule, nom_parser))
+    // Need to move ownership of the terminal value String
+    let nom_parser = move |input: &'a str| {
+        nom::character::complete::one_of::<&'a str, &str, nom::error::Error<&'a str>>(characters.as_ref())(input)
+    };
+
+    Ok(AbnfParser::<'a>::from_rule_and_char_parser(rule, nom_parser))
 }
 
 // #[cfg(test)]
