@@ -16,7 +16,6 @@ pub(crate) use string::string_parser;
 use abnf::types::Rule;
 use std::boxed::Box;
 
-// #[derive(Debug)]
 pub(crate) struct AbnfParser<'a> {
     parser: Box<dyn nom::Parser<&'a str, ParserOutput<'a>, nom::error::Error<&'a str>> + 'a>
 }

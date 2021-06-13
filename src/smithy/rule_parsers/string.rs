@@ -27,30 +27,30 @@ mod tests {
     const MATCH_STR: &str = "Hello World!";
 
     #[rstest]
-    #[case(Rule::new("string test", Node::string(MATCH_STR)))]
-    #[case(Rule::new("prose test", Node::prose(MATCH_STR)))]
+    #[case(Rule::new("string test", Node::string(MATCH_STR.to_string())))]
+    #[case(Rule::new("prose test", Node::prose(MATCH_STR.to_string())))]
     fn string_parser_full_match_test(#[case] rule: Rule) {
         let mut parser = string_parser(&rule).expect("String parser should return an AbnfParser!");
         let parser_output = parser.parse("Hello World!").expect("Parser should have successfully parsed the input!");
         assert_eq!(
-            ("", ParserOutput { rule_name: rule.name(), value: ParserOutputValue::Value(MATCH_STR)}), parser_output
+            ("", ParserOutput { rule_name: rule.name(), value: ParserOutputValue::Value(MATCH_STR.to_string())}), parser_output
         );
     }
 
     #[rstest]
-    #[case(Rule::new("string test", Node::string(MATCH_STR)))]
-    #[case(Rule::new("prose test", Node::prose(MATCH_STR)))]
+    #[case(Rule::new("string test", Node::string(MATCH_STR.to_string())))]
+    #[case(Rule::new("prose test", Node::prose(MATCH_STR.to_string())))]
     fn string_parser_partial_match_test(#[case] rule: Rule) {
         let mut parser = string_parser(&rule).expect("String parser should return an AbnfParser!");
         let parser_output = parser.parse("Hello World! It's a Beautiful Day!").expect("Parser should have successfully parsed the input!");
         assert_eq!(
-            (" It's a Beautiful Day!", ParserOutput { rule_name: rule.name(), value: ParserOutputValue::Value(MATCH_STR)}), parser_output
+            (" It's a Beautiful Day!", ParserOutput { rule_name: rule.name(), value: ParserOutputValue::Value(MATCH_STR.to_string())}), parser_output
         );
     }
 
     #[rstest]
-    #[case(Rule::new("string test", Node::string(MATCH_STR)))]
-    #[case(Rule::new("prose test", Node::prose(MATCH_STR)))]
+    #[case(Rule::new("string test", Node::string(MATCH_STR.to_string())))]
+    #[case(Rule::new("prose test", Node::prose(MATCH_STR.to_string())))]
     fn string_parser_no_match_test(#[case]rule: Rule) {
         let input = "It's a Beautiful Day!";
         let mut parser = string_parser(&rule).expect("String parser should return an AbnfParser!");
