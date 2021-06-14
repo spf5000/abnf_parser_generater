@@ -1,5 +1,5 @@
 use super::AbnfParser;
-use abnf::types::{Rule, Node, TerminalValues};
+use abnf::types::{Rule, Node};
 
 /// Exact string matcher. Used for String and Prose Node types.
 ///
