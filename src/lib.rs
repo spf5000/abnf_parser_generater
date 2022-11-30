@@ -1,25 +1,20 @@
 use std::collections::{HashMap, VecDeque};
 
 use abnf::rulelist;
-use abnf::types::{Rule, Node, StringLiteral};
-use nom::Parser;
+use abnf::types::{Rule, Node};
 
-type AstParser = dyn Parser<String, AstNode, anyhow::Error>;
+pub mod model;
+mod parsers;
 
-pub struct AstNode {
-    rule_name: String,
-    value: AstNodeValue
-}
+use model::*;
 
-pub enum AstNodeValue {
-    Literal(String)
-}
+// type AstParser = Fn(String) -> Result<(String, AstNode), anyhow::Error>;
 
 pub fn parse_abnf(abnf: String) -> anyhow::Result<Vec<Rule>> {
     Ok(rulelist(&abnf)?)
 }
 
-pub fn create_parser(mut rules: VecDeque<Rule>) -> anyhow::Result<Box<AstParser>> {
+pub fn create_parser(mut rules: VecDeque<Rule>) -> anyhow::Result<impl Fn(String) -> AstParserResult> {
     if rules.is_empty() {
 
     }
@@ -27,12 +22,18 @@ pub fn create_parser(mut rules: VecDeque<Rule>) -> anyhow::Result<Box<AstParser>
     let mut final_parser = None;
 
     while let Some(rule) = rules.pop_front() {
-        match create_parser_helper(&rule, &parsers)? {
-            Some(parser) => { 
-                final_parser = Some(String::from(rule.name()));
-                parsers.insert(String::from(rule.name()), parser);
+        let rule_name = String::from(rule.name());
+        match create_parser_helper(rule, &parsers) {
+            CreateParserOutput::Success(parser) => {
+                final_parser = Some(rule_name.clone());
+                parsers.insert(rule_name, Box::new(parser));
             },
-            None => rules.push_back(rule)
+            CreateParserOutput::Pending(rule) => {
+                rules.push_back(rule)
+            }, 
+            CreateParserOutput::Failed(err) => {
+                return Err(err)
+            }
         }
     }
 
@@ -40,13 +41,21 @@ pub fn create_parser(mut rules: VecDeque<Rule>) -> anyhow::Result<Box<AstParser>
     parsers.remove(&final_parser).ok_or(anyhow::anyhow!("Last inserted parser wasn't in the parser map!"))
 }
 
-fn create_parser_helper(rule: &Rule, parsers: &HashMap<String, Box<AstParser>>) -> anyhow::Result<Option<Box<AstParser>>> {
-    match rule.node() {
-        Node::String(string_literal) => Some(string_literal_parser_generator(string_literal)).transpose(),
-        _ => Ok(None)
-    }
+enum CreateParserOutput {
+    Success(Box<dyn Fn(ParserInput) -> AstParserResult>),
+    Pending(Rule),
+    Failed(anyhow::Error)
 }
 
-fn string_literal_parser_generator(string_literal: &StringLiteral) -> anyhow::Result<Box<AstParser>> {
-    anyhow::bail!("TODO: Implement")
+fn create_parser_helper<'a>(rule: Rule, _parsers: &HashMap<String, Box<dyn Fn(ParserInput) -> AstParserResult>>) -> CreateParserOutput {
+    match rule.node() {
+        Node::String(_) => {
+            match parsers::string_literal_parser_generator(rule) {
+                Ok(parser) => CreateParserOutput::Success(parser),
+                Err(e) => CreateParserOutput::Failed(e)
+            }
+//            let parser = parsers::string_literal_parser_generator(rule.name(), string_literal.to_owned());
+        },
+        _ => CreateParserOutput::Pending(rule)
+    }
 }
