@@ -10,7 +10,7 @@ edition = "2018"
 abnf = "0.13"
 # petgraph = "0.5.1"
 anyhow = "1.0"
-nom = "7"
+# nom = "7"
 
 [dev-dependencies]
-rstest = "0.15.0"
+rstest = "0.16.0"
